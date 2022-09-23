@@ -1,0 +1,157 @@
+function redPack(options) {
+    this.el = options.el;
+    this.rains = [];
+    this.speed = options.speed; // 鎺у埗绾㈠寘钀戒笅鐨勯€熷害
+    this.density = options.density; // 绾㈠寘瀵嗗害
+    this.callback = options.callback; // 鍥炶皟
+    // this.start();
+
+};
+redPack.prototype.create = function(id, amount) {
+    var el = this.el,
+    This = this,
+    flag = true,
+    fragment = document.createDocumentFragment(),
+    nRed = document.createElement("span");
+
+    // 娣诲姞鑷畾涔夊睘鎬�
+    nRed.setAttribute("redId",id);
+    nRed.setAttribute("redAmount",amount);
+    nRed.className = "redpack";
+    nRed.style.left = Math.random() * (el.clientWidth - 30) + "px";
+    nRed.style.top = -el.clientHeight / 10 + "px";
+
+    fragment.appendChild(nRed);
+    el.appendChild(fragment);
+    this.rains.push(nRed);
+    this.move(nRed);
+
+	// 绾㈠寘浜嬩欢鍑芥暟
+	var handler = function (e) {
+        
+		if(flag=== true){
+			var that = nRed;
+			e.target.className = "redpack redpacked";
+			This.callback(e);
+            console.log(redCount);
+			flag = false;
+            This.ajax({
+                method: 'POST',
+                data: {uid: 1},
+                url: 'http://127.0.0.1:3000/interface',
+                success: function (res) {
+                    var data = JSON.parse(res);
+                    prizeArr.push(data);
+                    
+
+                }
+            });
+		} else {
+			return
+		}
+
+	};
+	document.addEventListener('touchstart', function(e){
+		if(e.target.className === 'redpack') {
+			handler(e);
+		} else if (e.target.getAttribute('redAmount') === '0') {
+			e.target.className = 'redPackNone';
+      } else {
+		   return false;
+      }
+	});
+};
+redPack.prototype.start = function(data) {
+    var that = this,
+        i = 0;
+    that.timer = setInterval(function() {
+        if(i <= data.length - 1) {
+            var id = data[i].id,
+                amount = data[i].amount;
+            that.create(id,amount);
+            i++;
+        }
+
+    }, that.density);
+
+};
+redPack.prototype.stop = function() {
+    var This = this;
+    clearInterval(This.timer);
+    for (var i = 0; i < This.rains.length; i++) {
+        clearInterval(This.rains[i].timer);
+    }
+};
+redPack.prototype.move = function(rains) {
+    var el = this.el;
+    var This = this;
+    var diffY = Math.random() + 1; // 鍨傜洿涓婄殑杞诲井鍋忕Щ
+    var diffX = Math.random(); // 姘村钩涓婄殑杞诲井鍋忕Щ
+    rains.timer = setInterval(function() {
+        if (diffY > 1.5) {
+            rains.style.left = parseInt(rains.style.left) + parseInt(diffX * rains.clientHeight / 30) + "px";
+        } else {
+            rains.style.left = parseInt(rains.style.left) - parseInt(diffX * rains.clientHeight / 30) + "px";
+        }
+        rains.style.top = parseInt(rains.style.top) + parseInt(diffY * rains.clientHeight / 20) + "px";
+        if (el.clientHeight < parseInt(rains.style.top)) {
+            // 瓒呭嚭 鍖哄煙杩囧悗锛屽叧闂畾鏃跺櫒锛屽垹闄ょ孩鍖�
+            clearInterval(rains.timer);
+            // el.removeEventListener('click', handler, false);
+            // document.removeEventListener('touchstart', handler, false);
+            el.removeChild(rains);
+        }
+    }, This.speed);
+};
+// 鏃堕棿鍋滄鏃舵竻闄ゅ墿浣欑孩鍖�
+redPack.prototype.clear = function () {
+    var container = g('box'),
+        redItem = container.childNodes;
+    for (var i = redItem.length - 1; i >= 0; i--) {
+        container.removeChild(redItem[i]);
+    }
+};
+
+// ajax 灏佽
+redPack.prototype.ajax = function(opt) {
+    /* 灏佽ajax鍑芥暟
+ * @param {string}opt.type http杩炴帴鐨勬柟寮忥紝鍖呮嫭POST鍜孏ET涓ょ鏂瑰紡
+ * @param {string}opt.url 鍙戦€佽姹傜殑url
+ * @param {boolean}opt.async 鏄惁涓哄紓姝ヨ姹傦紝true涓哄紓姝ョ殑锛宖alse涓哄悓姝ョ殑
+ * @param {object}opt.data 鍙戦€佺殑鍙傛暟锛屾牸寮忎负瀵硅薄绫诲瀷
+ * @param {function}opt.success ajax鍙戦€佸苟鎺ユ敹鎴愬姛璋冪敤鐨勫洖璋冨嚱鏁�
+ */
+        opt = opt || {};
+        opt.method = (opt.method == null ?"GET" : opt.method.toUpperCase());
+        opt.url = opt.url || '';
+        opt.async = opt.async || true;
+        opt.data = opt.data || null;
+        opt.success = opt.success || function () {};
+        var xmlHttp = null;
+        if (XMLHttpRequest) {
+            xmlHttp = new XMLHttpRequest();
+        }
+        else {
+            xmlHttp = new ActiveXObject('Microsoft.XMLHTTP');
+        }
+        var params = [];
+        for (var key in opt.data){
+            params.push(key + '=' + opt.data[key]);
+        }
+        var postData = params.join('&');
+        if (opt.method.toUpperCase() === 'POST') {
+            xmlHttp.open(opt.method, opt.url, opt.async);
+            xmlHttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
+            xmlHttp.send(postData);
+        }
+        else if (opt.method.toUpperCase() === 'GET') {
+            xmlHttp.open(opt.method, opt.url + '?' + postData, opt.async);
+            xmlHttp.send(null);
+        }
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState === 4 && xmlHttp.status === 200) {
+                opt.success(xmlHttp.responseText);
+            }
+        }
+
+};
